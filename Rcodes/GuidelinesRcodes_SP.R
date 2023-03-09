@@ -100,229 +100,228 @@ hh_temp <- head_hh %>%
   )
 
 
-# Chi-sqrd and Cramer's-V tests -------------------------------------------
+# Pruebas de Chi-cuadrado y Cramer-V -------------------------------------------
 
-# Phone ownership is correlated with literacy
-# From the phone subset a sample is selected in a further 2nd phase
-# The phone data conducted by phone
+# La propiedad del teléfono está correlacionada con la alfabetización
+# De un subconjunto de teléfonos se selecciona una muestra en una segunda fase adicional
+# Los datos del teléfono se recopilan mediante el teléfono
 
-# Create a contingency table of phone ownership and literacy status
+# Crear una tabla de contingencia de la propiedad del teléfono y el estado de alfabetización
 crosstable1 <- table(hh_temp$Phone, hh_temp$Literacy)
 crosstable1
 
-# Perform chi-squared test to check for association between phone ownership and literacy
+# Realizar una prueba de chi-cuadrado para verificar la asociación entre la propiedad del teléfono y la alfabetización
 chisq.test(crosstable1)
 
-# Calculate Cramer's V statistic to measure the strength of association
+# Calcular la estadística V de Cramer para medir la fuerza de la asociación
 CramerV(crosstable1,
         conf.level = 0.95)
 
-# Calculate other association statistics based on the contingency table
+# Calcular otras estadísticas de asociación basadas en la tabla de contingencia
 assocstats(crosstable1)
 
-# Create a contingency table of phone ownership and unpaid apprenticeship status
+# Crear una tabla de contingencia de la propiedad del teléfono y el estado de aprendizaje no remunerado
 crosstable2 <- table(hh_temp$Phone, hh_temp$hh_e06_8a)
 
-# Calculate proportion of phone owners who have unpaid apprenticeship status
+# Calcular la proporción de propietarios de teléfonos que tienen un estado de aprendizaje no remunerado
 prop.table(crosstable2, margin = 2)[2, ]
 
+# Modelo de puntaje de propensión -----------------------------------------
 
-# Propensity score model --------------------------------------------------
-
-# logistic regression model
+# Modelo de regresión logística
 ps_fit1 <- glm(
   formula = factor(Phone) ~ 1 + factor(hh_c05_1) + factor(hh_e06_8a),
   family = binomial(link = "logit"),
   data = hh_temp
 )
 
-# print summary of the model
+# Imprimir el resumen del modelo
 summary(ps_fit1)
 
-# add the predicted PS as a new column to the dataset
+# Agregar el puntaje de propensión predicho como una nueva columna en el conjunto de datos
 hh_temp$ps <- predict(ps_fit1, type = "response")
 
-# calculate the sum of PS
+# Calcular la suma del puntaje de propensión
 sum(hh_temp$ps)
 
-# create a table of Phone ownership
+# Crear una tabla de propiedad del teléfono
 table(hh_temp$Phone)
 
-# create a histogram of PS
+# Crear un histograma del puntaje de propensión
 hist(hh_temp$ps)
 
-# print summary statistics of PS
+# Imprimir las estadísticas resumidas del puntaje de propensión
 summary(hh_temp$ps)
 
-# set up a 3x1 plot
+# Configurar un gráfico de 3x1
 par(mfrow = c(3, 1))
 
-# create a histogram of PS for all units
+# Crear un histograma del puntaje de propensión para todas las unidades
 hist(hh_temp$ps,
-     main = "All units",
-     xlab = "Estimated PS",
+     main = "Todas las unidades",
+     xlab = "Puntaje de propensión estimado",
      xlim = c(0, 1))
 
-# create a histogram of PS for respondents
+# Crear un histograma del puntaje de propensión para los encuestados
 hist(hh_temp$ps[hh_temp$Phone == "Yes"],
-     main = "Respondents",
-     xlab = "Estimated PS",
+     main = "Encuestados",
+     xlab = "Puntaje de propensión estimado",
      xlim = c(0, 1))
 
-# create a histogram of PS for non-respondents
+# Crear un histograma del puntaje de propensión para los no encuestados
 hist(hh_temp$ps[hh_temp$Phone == "No"],
-     main = "Nonrespondents",
-     xlab = "Estimated PS",
+     main = "No encuestados",
+     xlab = "Puntaje de propensión estimado",
      xlim = c(0, 1))
 
-# close the plot
+# Cerrar el gráfico
 dev.off()
 
-# set up a 2x2 plot
+# Configurar un gráfico de 2x2
 par(mfrow = c(2, 2))
 
-# create a boxplot of PS by literacy for respondents
+# Crear un boxplot de PS por alfabetización para encuestados
 with(
   hh_temp[hh_temp$Phone == "Yes",],
   boxplot(
     ps ~ factor(hh_c05_1),
-    main = "Respondents",
-    ylab = "Estimated PS",
-    xlab = "Literacy"
+    main = "Encuestados",
+    ylab = "PS estimado",
+    xlab = "Alfabetización"
   )
 )
 
-# create a boxplot of PS by literacy for non-respondents
+# Crear un boxplot de PS por alfabetización para no encuestados
 with(
   hh_temp[hh_temp$Phone == "No",],
   boxplot(
     ps ~ factor(hh_c05_1),
-    main = "Nonrespondents",
-    ylab = "Estimated PS",
-    xlab = "Literacy"
+    main = "No encuestados",
+    ylab = "PS estimado",
+    xlab = "Alfabetización"
   )
 )
 
-# create a boxplot of PS by employment status for respondents
+# Crear un boxplot de PS por estado de empleo para encuestados
 with(
   hh_temp[hh_temp$Phone == "Yes",],
   boxplot(
     ps ~ factor(hh_e06_8a),
-    main = "Respondents",
-    ylab = "Estimated PS",
-    xlab = "Employment Status"
+    main = "Encuestados",
+    ylab = "PS estimado",
+    xlab = "Estado de empleo"
   )
 )
 
-# create a boxplot of PS by employment status for non-respondents
+# Crear un boxplot de PS por estado de empleo para no encuestados
 with(
   hh_temp[hh_temp$Phone == "No",],
   boxplot(
     ps ~ factor(hh_e06_8a),
-    main = "Nonrespondents",
-    ylab = "Estimated PS",
-    xlab = "Employment Status"
+    main = "No encuestados",
+    ylab = "PS estimado",
+    xlab = "Estado de empleo"
   )
 )
 
-# close the plot
+# Cerrar el gráfico
 dev.off()
 
-# Representativity Indicators ---------------------------------------------
+# Indicadores de representatividad ---------------------------------------------
 
-## At the national - level
+## A nivel nacional
 
-# Summarize the hh_temp dataset at the national level
+# Resumir el conjunto de datos hh_temp a nivel nacional
 summary_ps_national <- hh_temp %>%
   summarise(
     n = n(),
-    # count the number of observations
+    # contar el número de observaciones
     urp = mean(ps),
-    # calculate the unweighted mean of ps
+    # calcular la media no ponderada de ps
     rho.bar = weighted.mean(ps, hh_wgt),
-    # calculate the weighted mean of ps using hh_wgt as weights
+    # calcular la media ponderada de ps utilizando hh_wgt como pesos
     urr = sum(Phone == "Yes") / n(),
-    # calculate the unweighted proportion of Phone == "Yes"
+    # calcular la proporción no ponderada de Phone == "Yes"
     wrr = weighted.mean(Phone == "Yes", hh_wgt),
-    # calculate the weighted proportion of Phone == "Yes" using hh_wgt as weights
+    # calcular la proporción ponderada de Phone == "Yes" utilizando hh_wgt como pesos
     sdp = sd(ps),
-    # calculate the standard deviation of ps
-    R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt)) # calculate the R-squared hat value
+    # calcular la desviación estándar de ps
+    R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt)) # calcular el valor de R-cuadrado-hat
   )
 
-# Print the summary_ps_national
+# Imprimir summary_ps_national
 summary_ps_national
 
-# Calculate the standard deviation of ps in hh_temp dataset
+# Calcular la desviación estándar de ps en el conjunto de datos hh_temp
 sd(hh_temp$ps)
 
-# Calculate the estimated number of households in the population
+# Calcular el número estimado de hogares en la población
 N.hat <- sum(hh_temp$hh_wgt)
 
-# Calculate the weighted mean of ps using hh_wgt as weights
+# Calcular la media ponderada de ps utilizando hh_wgt como pesos
 rho.bar <- sum(hh_temp$ps * hh_temp$hh_wgt) / N.hat
 
-# Calculate the R-squared hat value
+# Calcular el valor de R-cuadrado-hat
 R.hat <- 1 - 2 *
   sqrt((1 / (N.hat - 1)) * sum(hh_temp$hh_wgt * (hh_temp$ps - rho.bar) ^ 2))
 
-# Print the summary statistics of ps in hh_temp dataset
+# Imprimir las estadísticas resumidas de ps en el conjunto de datos hh_temp
 summary(hh_temp$ps)
 
-## At the dissaggregated - level
+## A nivel desagregado
 
-# Literacy
-# Create a boxplot of ps by Literacy level
+# Alfabetización
+# Crea un diagrama de caja de ps por nivel de alfabetización
 with(hh_temp, boxplot(ps ~ Literacy))
 
-# Create three histograms of ps, one for each level of Literacy
+# Crea tres histogramas de ps, uno para cada nivel de alfabetización
 par(mfrow = c(1, 3))
 hist(hh_temp$ps)
 hist(hh_temp$ps[hh_temp$Literacy == "Literate"])
 hist(hh_temp$ps[hh_temp$Literacy == "Illiterate"])
 dev.off()
 
-# Summarize the hh_temp dataset by Literacy level
+# Resume el conjunto de datos hh_temp por nivel de alfabetización
 summary_ps_Literacy <- hh_temp %>%
   group_by(Literacy) %>%
   summarise(
     n = n(),
-    # count the number of observations
+    # cuenta el número de observaciones
     urp = mean(ps),
-    # calculate the unweighted mean of ps
+    # calcula la media no ponderada de ps
     rho.bar = weighted.mean(ps, hh_wgt),
-    # calculate the weighted mean of ps using hh_wgt as weights
+    # calcula la media ponderada de ps usando hh_wgt como pesos
     urr = sum(Phone == "Yes") / n(),
-    # calculate the unweighted proportion of Phone == "Yes"
+    # calcula la proporción no ponderada de Phone == "Yes"
     wrr = weighted.mean(Phone == "Yes", hh_wgt),
-    # calculate the weighted proportion of Phone == "Yes" using hh_wgt as weights
+    # calcula la proporción ponderada de Phone == "Yes" usando hh_wgt como pesos
     sdp = sd(ps),
-    # calculate the standard deviation of ps
-    R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt)) # calculate the R-squared hat value
+    # calcula la desviación estándar de ps
+    R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt)) # calcula el valor de R-cuadrado
   ) %>% as.data.frame()
 
-# Print the summary_ps_Literacy
+# Imprime summary_ps_Literacy
 summary_ps_Literacy
 
-# Activity
+# Actividad
 
-# Create a boxplot of 'ps' variable grouped by 'hh_e06_8a'
+# Crea un diagrama de caja de la variable 'ps' agrupada por 'hh_e06_8a'
 with(hh_temp, boxplot(ps ~ hh_e06_8a))
 
-# Create a histogram of 'ps' variable
+# Crea un histograma de la variable 'ps'
 hist(hh_temp$ps)
 
-# Create a 2x2 grid of histograms of 'ps' variable grouped by 'hh_e06_8a' values
+# Crea una cuadrícula 2x2 de histogramas de la variable 'ps' agrupados por los valores de 'hh_e06_8a'
 par(mfrow = c(2, 2))
 hist(hh_temp$ps[hh_temp$hh_e06_8a == 1])
 hist(hh_temp$ps[hh_temp$hh_e06_8a == 2])
 hist(hh_temp$ps[hh_temp$hh_e06_8a == 3])
 hist(hh_temp$ps[hh_temp$hh_e06_8a == 5])
 
-# Turn off the grid of histograms
+# Desactiva la cuadrícula de histogramas
 dev.off()
 
-# Create a summary table of 'ps' variable statistics grouped by 'hh_e06_8a' values
+# Crea una tabla resumen de estadísticas de la variable 'ps' agrupadas por los valores de 'hh_e06_8a'
 summary_ps_Activity <- hh_temp %>%
   group_by(hh_e06_8a) %>%
   summarise(
@@ -335,13 +334,13 @@ summary_ps_Activity <- hh_temp %>%
     R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt))
   ) %>% as.data.frame()
 
-# Print the summary table
+# Imprime summary_ps_Activity
 summary_ps_Activity
 
-# Activity and Literacy
+# Actividad y alfabetización
 
-# This code groups hh_temp by Literacy and hh_e06_8a, and calculates summary statistics for each group.
-# The resulting data frame is saved as summary_ps_LiteracyActivity.
+# Este código agrupa hh_temp por alfabetización y hh_e06_8a, y calcula estadísticas resumidas para cada grupo.
+# El marco de datos resultante se guarda como summary_ps_LiteracyActivity.
 
 summary_ps_LiteracyActivity <- hh_temp %>%
   group_by(Literacy, hh_e06_8a) %>%
@@ -355,53 +354,50 @@ summary_ps_LiteracyActivity <- hh_temp %>%
     R.hat = 1 - 2 * sqrt(weighted.mean((ps - rho.bar) ^ 2, hh_wgt))
   ) %>% as.data.frame()
 
-# Print the resulting data frame
+# Imprimir el marco de datos resultante
 summary_ps_LiteracyActivity
 
+# Peso de variable de clase ------------------------------------------------
 
-# Class variable weighting ------------------------------------------------
-
-# Group hh_temp data by three variables and calculate count and total weight for each group
+# Agrupar los datos de hh_temp por tres variables y calcular el conteo y peso total para cada grupo
 hh_temp_agg <- hh_temp %>%
-  group_by (hh_c05_1, hh_e06_8a, hh_b06_4) %>%
+  group_by(hh_c05_1, hh_e06_8a, hh_b06_4) %>%
   summarise(n = n(),
             thh_wgt = sum(panelweight_2019))
 
-# Filter hh_temp_agg data into two data frames based on the value of hh_b06_4 variable
+# Filtrar los datos de hh_temp_agg en dos data frames basados en el valor de la variable hh_b06_4
 hh_temp_agg_resp <- hh_temp_agg %>% filter(hh_b06_4 == 1)
-hh_temp_agg_nonr <- hh_temp_agg  %>% filter(hh_b06_4 == 2)
+hh_temp_agg_nonr <- hh_temp_agg %>% filter(hh_b06_4 == 2)
 
-# Combine hh_temp_agg_nonr data with hh_temp_agg_resp data, with hh_c05_1, hh_e06_8a, and hh_b06_4 variables removed from hh_temp_agg_resp data
-Table11 <- data.frame(
+# Combinar los datos de hh_temp_agg_nonr con los datos de hh_temp_agg_resp, con las variables hh_c05_1, hh_e06_8a y hh_b06_4 eliminadas de los datos de hh_temp_agg_resp
+Tabla11 <- data.frame(
   hh_temp_agg_nonr,
-  hh_temp_agg_resp %>% ungroup %>%
-    select(-hh_c05_1,-hh_e06_8a,-hh_b06_4)
+  hh_temp_agg_resp %>% ungroup %>% select(-hh_c05_1, -hh_e06_8a, -hh_b06_4)
 )
 
-# Calculate total weight for hh_temp_agg_resp and hh_temp_agg_nonr data
+# Calcular el peso total para los datos de hh_temp_agg_resp y hh_temp_agg_nonr
 sum(hh_temp_agg_resp$thh_wgt)
 sum(hh_temp_agg_nonr$thh_wgt)
 sum(hh_temp$panelweight_2019)
 
-# Add a new column 'ac' to hh_temp_agg_resp data, which calculates the ratio of total weight of both hh_temp_agg_resp and hh_temp_agg_nonr to the total weight of hh_temp_agg_resp
+# Agregar una nueva columna 'ac' a los datos de hh_temp_agg_resp, que calcula la proporción del peso total de ambos hh_temp_agg_resp y hh_temp_agg_nonr al peso total de hh_temp_agg_resp
 hh_temp_agg_resp$ac <-
   (hh_temp_agg_resp$thh_wgt + hh_temp_agg_nonr$thh_wgt) / hh_temp_agg_resp$thh_wgt
 
-# Join hh_temp data with hh_temp_agg_resp data based on three variables and calculate weighted average of panelweight_2019 variable for each household in hh_temp_resp data
-hh_temp_resp <-  hh_temp %>%
-  inner_join(hh_temp_agg_resp %>%
-               select(-n,-thh_wgt))
+# Unir los datos de hh_temp con los datos de hh_temp_agg_resp basados en tres variables y calcular el promedio ponderado de la variable panelweight_2019 para cada hogar en los datos de hh_temp_resp
+hh_temp_resp <- hh_temp %>%
+  inner_join(hh_temp_agg_resp %>% select(-n, -thh_wgt))
 
-hh_temp_resp$wac <-
-  with(hh_temp_resp, panelweight_2019 * ac * hhsize)
-hh_temp_resp$w0 <-
-  hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize
+hh_temp_resp$wac <- with(hh_temp_resp, panelweight_2019 * ac * hhsize)
+hh_temp_resp$w0 <- hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize
 
-# Calculate total weight for w0 and wac variables in hh_temp_resp data
+#!/bin/bash
+
+# Calcular el peso total para las variables w0 y wac en los datos de hh_temp_resp
 sum(hh_temp_resp$w0)
 sum(hh_temp_resp$wac)
 
-# Plot wac against w0 variables in hh_temp_resp data and add a line with slope 1 and intercept 0
+# Plotear las variables wac contra w0 en los datos de hh_temp_resp y agregar una línea con pendiente 1 e intercepción 0
 plot(
   hh_temp_resp$w0,
   hh_temp_resp$wac,
@@ -412,76 +408,72 @@ plot(
 )
 abline(a = 0, b = 1, col = 2)
 
-# Create histograms of panelweight_2019 and wac variables in hh_temp_resp data
+# Crear histogramas de las variables panelweight_2019 y wac en los datos de hh_temp_resp
 hist(hh_temp_resp$panelweight_2019)
 hist(hh_temp_resp$wac)
 
-# Classes for PS ----------------------------------------------------------
+# Clases para PS ----------------------------------------------------------
 
-# Define a propensity score model using the pclass function
+# Definir un modelo de puntaje de propensión utilizando la función pclass
 psclass = pclass(
-  factor(Phone) ~ 1 + factor(hh_c05_1) +  # Independent variables
+  factor(Phone) ~ 1 + factor(hh_c05_1) +  # Variables independientes
     factor(hh_e06_8a),
-  # Independent variable
+  # Variable independiente
   type = "unwtd",
-  # Type of analysis to perform (unweighted)
-  data = hh_temp  # Dataset to use
+  # Tipo de análisis a realizar (no ponderado)
+  data = hh_temp  # Conjunto de datos a utilizar
 )
 
-# Create a table of the propensity score classes
+# Crear una tabla de las clases de puntaje de propensión
 table(psclass$p.class, useNA = "always")
 
-# Summarize the propensities
+# Resumir las propensiones
 summary(psclass$propensities)
 
-# Predict the propensity score for each observation in the dataset
+# Predecir el puntaje de propensión para cada observación en el conjunto de datos
 hh_temp$ps <- predict(ps_fit1, type = "response")
 
-# Classify each observation into a propensity score class
+# Clasificar cada observación en una clase de puntaje de propensión
 hh_temp$class <- psclass$p.class
 
-# Create a summary table of the dataset with five propensity score classes
+# Crear una tabla de resumen del conjunto de datos con cinco clases de puntaje de propensión
 summary_ps_5classes <- hh_temp %>%
   group_by(class) %>%
   summarise(
     n = n(),
     urp = mean(ps),
-    # Unweighted mean propensity score
+    # Puntaje de propensión promedio no ponderado
     wrp = weighted.mean(ps, hh_wgt),
-    # Weighted mean propensity score
+    # Puntaje de propensión promedio ponderado
     urr = sum(Phone == "Yes") / n(),
-    # Unweighted response rate
+    # Tasa de respuesta no ponderada
     wrr = weighted.mean(Phone == "Yes", hh_wgt),
-    # Weighted response rate
-    mps = median(ps) # Median propensity score
+    # Tasa de respuesta ponderada
+    mps = median(ps) # Puntaje de propensión mediano
   )
 
-# Remove the n variable from the summary table
+# Remover la variable n de la tabla de resumen
 ps_classified <- summary_ps_5classes %>% select(-n)
 
-# Join the classified propensity score with the original dataset
+# Unir el propensity score clasificado con el dataset original
 hh_temp_resp <- hh_temp %>%
   inner_join(ps_classified) %>%
   inner_join(hh_temp_resp)
 
-# Create variables for weighted propensity score calculations
-hh_temp_resp$w1ps <-
-  with(hh_temp_resp, hhsize * panelweight_2019 / urp)
-hh_temp_resp$w2ps <-
-  with(hh_temp_resp, hhsize * panelweight_2019 / wrp)
-hh_temp_resp$w3ps <-
-  with(hh_temp_resp, hhsize * panelweight_2019 / urr)
-hh_temp_resp$w4ps <-
-  with(hh_temp_resp, hhsize * panelweight_2019 / wrr)
+# Crear variables para los cálculos del propensity score ponderado
+hh_temp_resp$w1ps <- with(hh_temp_resp, hhsize * panelweight_2019 / urp)
+hh_temp_resp$w2ps <- with(hh_temp_resp, hhsize * panelweight_2019 / wrp)
+hh_temp_resp$w3ps <- with(hh_temp_resp, hhsize * panelweight_2019 / urr)
+hh_temp_resp$w4ps <- with(hh_temp_resp, hhsize * panelweight_2019 / wrr)
 
-# Calculate weighted sums of the different variables
+# Calcular sumas ponderadas de las diferentes variables
 sum(hh_temp_resp$w0)
 sum(hh_temp_resp$w1ps)
 sum(hh_temp_resp$w2ps)
 sum(hh_temp_resp$w3ps)
 sum(hh_temp_resp$w4ps)
 
-# Set the plot layout to 2 x 2
+# Establecer la disposición de la gráfica en 2 x 2
 par(mfrow = c(2, 2))
 
 # Plot w1ps against wac and set the axis labels and limits
@@ -539,7 +531,6 @@ abline(a = 0, b = 1, col = 2)
 # Turn off the graphics device
 dev.off()
 
-
 # Calibration -------------------------------------------------------------
 
 # Reside and Region
@@ -579,127 +570,114 @@ totals <- HFPS %>%
   summarise(n = n(),
             N = sum(hh_wgt))
 
-# Create a matrix of domains using the reside and region columns from hh_temp_resp
-x0s <-
-  as.matrix(Domains(paste(
-    hh_temp_resp$reside, hh_temp_resp$region
-  )))
+# Crear una matriz de dominios usando las columnas reside y region de hh_temp_resp
+x0s <- as.matrix(Domains(paste(hh_temp_resp$reside, hh_temp_resp$region)))
 
-# Create a matrix of total population values
+# Crear una matriz de valores de población total
 tx0 <- as.matrix(totals$N)
 
-# Sum the values in tx0
+# Sumar los valores en tx0
 sum(tx0)
 
-# Perform calibration using the linear method on the x0s and tx0 matrices
-g0k <-
-  calib(
-    x0s,
-    d = hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize,
-    total = tx0,
-    method = "linear"
-  )
+# Realizar la calibración utilizando el método lineal en las matrices x0s y tx0
+g0k <- calib(x0s, d = hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize, total = tx0, method = "linear")
 
-# Calculate calibrated weights and store them in hh_temp_resp$wcal
-hh_temp_resp$wcal <-
-  hh_temp_resp$panelweight_2019 * g0k * hh_temp_resp$hhsize
+# Calcular los pesos calibrados y almacenarlos en hh_temp_resp$wcal
+hh_temp_resp$wcal <- hh_temp_resp$panelweight_2019 * g0k * hh_temp_resp$hhsize
 
-# Sum the calibrated weights in hh_temp_resp$wcal
+# Sumar los pesos calibrados en hh_temp_resp$wcal
 sum(hh_temp_resp$wcal)
 
-# Print tx0
+# Imprimir tx0
 tx0
 
-# Print the column sums of x0s multiplied by panelweight_2019 and hhsize
+# Imprimir las sumas de columna de x0s multiplicadas por panelweight_2019 y hhsize
 colSums(x0s * hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize)
 
-# Calculate the ratio of tx0 to the column sums of x0s multiplied by panelweight_2019 and hhsize
+# Calcular la relación de tx0 con las sumas de columna de x0s multiplicadas por panelweight_2019 y hhsize
 tx0 / colSums(x0s * hh_temp_resp$panelweight_2019 * hh_temp_resp$hhsize)
 
-# Create a table of the calibrated weights
+# Crear una tabla de los pesos calibrados
 table(g0k)
 
-# Sum the weights in hh_temp_resp$wac
+# Sumar los pesos en hh_temp_resp$wac
 sum(hh_temp_resp$wac)
 
-# Sum the calibrated weights in hh_temp_resp$wcal
+# Sumar los pesos calibrados en hh_temp_resp$wcal
 sum(hh_temp_resp$wcal)
 
-# Create a scatter plot of wac vs. wcal
-plot(hh_temp_resp$wac,
-     hh_temp_resp$wcal,
-     xlab = "wac",
-     ylab = "wcal")
+# Crear un gráfico de dispersión de wac vs. wcal
+plot(hh_temp_resp$wac, hh_temp_resp$wcal, xlab = "wac", ylab = "wcal")
 
-# Add a diagonal line to the plot
+# Agregar una línea diagonal al gráfico
 abline(a = 0, b = 1, col = 2)
-
 
 # PS + Calibration --------------------------------------------------------
 
-# Plotting w1ps against wcal
+# Gráfico de w1ps vs wcal
 plot(hh_temp_resp$w1ps, hh_temp_resp$wcal)
 
-# Adding a diagonal line to the plot
+# Añadir una línea diagonal al gráfico
 abline(a = 0, b = 1, col = 2)
 
-# Creating a histogram of w1ps
+# Crear un histograma de w1ps
 hist(hh_temp_resp$w1ps)
 
-# Creating a histogram of wcal
+# Crear un histograma de wcal
 hist(hh_temp_resp$wcal)
 
-# Applying a calibration function to w1ps
+# Aplicar una función de calibración a w1ps
 g1k <- calib(x0s,
              d = hh_temp_resp$w1ps,
              total = tx0,
              method = "linear")
 
-# Scaling w1ps by the calibration factor
+# Escalar w1ps por el factor de calibración
 hh_temp_resp$wpscal <- hh_temp_resp$w1ps * g1k
 
-# Summing the values of w0
+# Sumar los valores de w0
 sum(hh_temp_resp$w0)
 
-# Summing the values of w1ps
+# Sumar los valores de w1ps
 sum(hh_temp_resp$w1ps)
 
-# Summing the values of wcal
+# Sumar los valores de wcal
 sum(hh_temp_resp$wcal)
 
-# Summing the values of wpscal
+# Sumar los valores de wpscal
 sum(hh_temp_resp$wpscal)
 
-# Plotting w1ps against wpscal
+# Gráfico de w1ps vs wpscal
 plot(hh_temp_resp$w1ps,
      hh_temp_resp$wpscal,
      ylab = "wpscal",
      xlab = "wps")
 
-# Adding a diagonal line to the plot
+# Añadir una línea diagonal al gráfico
 abline(a = 0, b = 1, col = 2)
 
-# Creating a histogram of w1ps
+# Crear un histograma de w1ps
 hist(hh_temp_resp$w1ps)
 
-# Creating a histogram of wpscal
+# Crear un histograma de wpscal
 hist(hh_temp_resp$wpscal)
 
-# Displaying a summary of the values of w1ps
+# Resumen de los valores de w1ps
 summary(hh_temp_resp$w1ps)
 
 
 
 # Final plots -------------------------------------------------------------
 
-# Here is the code with comments added:
+# Aquí está el código con comentarios agregados:
 
-# Select the columns of interest from hh_temp_resp dataframe
+# Seleccionar las columnas de interés del dataframe hh_temp_resp
 dataweights <- hh_temp_resp %>%
   select(w0, wac, w1ps, wcal, wpscal)
 
-# Calculate the correlation matrix of the selected columns
+# Calcular la matriz de correlación de las columnas seleccionadas
 cor(dataweights)
 
-# Create a scatterplot matrix for the selected columns
+# Crear una matriz de gráficos de dispersión para las columnas seleccionadas
 pairs.panels(dataweights)
+
